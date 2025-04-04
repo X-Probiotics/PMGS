@@ -2,13 +2,13 @@
 
 ## Demo
 ### Synthetic：
-TNT
+
 ![TNT](https://github.com/user-attachments/assets/74642537-f5a6-4394-aaac-134738a151b5)
-Doll
+
 ![nz](https://github.com/user-attachments/assets/20bb5697-3745-4f13-97f9-be9e80bb7831)
-Grenade
+
 ![boom](https://github.com/user-attachments/assets/bcd0f7ce-c3d2-4d6a-9001-9d986e2ee707)
-Cola
+
 ![baishi](https://github.com/user-attachments/assets/fdf52a20-5dd3-459d-beff-4009b1199c92)
 
 ### Real：
