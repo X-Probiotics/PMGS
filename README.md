@@ -1,8 +1,3 @@
 
-
-https://github.com/user-attachments/assets/c74ee258-2fc2-4405-8df3-2a31027e173b
-
-
-
-https://github.com/user-attachments/assets/75cc89ad-17de-4d28-aabe-c994ea774354
-
+![box_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3f199596-4f85-47db-b5da-7a57d7a98432)
+![bear_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/22954c31-d1d4-45cd-941d-c3c4b980bccd)
