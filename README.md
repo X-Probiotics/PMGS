@@ -1,8 +1,8 @@
 # PMGS: Reconstruction of Projectile Motion with 3D Gaussian Splatting
 
 ## Demo
-### Synthetic：
-（Left-Render; Right-GT）
+### Synthetic（Left-Render; Right-GT）：
+
 
 ![TNT](https://github.com/user-attachments/assets/74642537-f5a6-4394-aaac-134738a151b5)
 
