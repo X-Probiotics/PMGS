@@ -16,5 +16,4 @@
 
 ![bear_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/22954c31-d1d4-45cd-941d-c3c4b980bccd)
 
-https://github.com/user-attachments/assets/7183d933-b317-4ac9-8732-0ad045a6e003
-
+![sb_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3c615cdf-8b1a-496e-ac3f-59bc8d483377)
