@@ -5,6 +5,7 @@ Projectile motion reconstruction is critical for robotics and computer vision ap
 
 ## Methods
 ![Methods](https://github.com/user-attachments/assets/2099ac39-543b-499e-9a4f-19295ead4eec)
+Overview of PMGS. For modeling appearance and geometry, we first segment the target via the pre-trained SAM model, then decompose the motion through centralization to transform the dynamic scene into static. Following the 3DGS pipeline, we reconstruct a set of Gaussian kernels and align them at the original scale with a set of learnable affine transformation. In the motion restoration stage, we learn the target's 6DoF spatial transformation frame by frame based on the explicit Gaussian representation, and comprehensively improve tracking accuracy by integrating physics-enhanced strategies.
 
 ## Demo
 ### (1) Synthetic（Left-Render; Right-GT）：
