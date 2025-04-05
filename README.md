@@ -14,6 +14,6 @@
 ### Real：
 ![box_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3f199596-4f85-47db-b5da-7a57d7a98432)
 
-![bear_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/22954c31-d1d4-45cd-941d-c3c4b980bccd)
+![bear_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/a5348f9b-964e-4e89-9449-51ac65158574)
 
 ![sb_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3c615cdf-8b1a-496e-ac3f-59bc8d483377)
