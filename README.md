@@ -3,6 +3,9 @@
 ## Abstract
 Projectile motion reconstruction is critical for robotics and computer vision applications. However, jointly estimating 3D geometry and motion parameters from monocular observations remains challenging due to its ill-posed inverse nature, while existing dynamic neural rendering methods struggle to capture complex rigid-body physics across large spatial-temporal scales. To address these issues, we propose a unified framework that integrates static modeling with dynamic tracking for projectile motion reconstruction. Our approach comprises two key stages: 1) Dynamic scene decomposition for appearance and geometry modeling, where the complex motion is converted into equivalent static scenes via a Focus-Align module, reconstructed through optical flow-enhanced Gaussian splatting with an improved point density control mechanism; 2) Physically-constrained motion tracking for trajectory restoration, where we estimate per-frame SE(3) transformations based on explicit Gaussian representations, and enforce Newtonian acceleration priors to ensure physically consistent motion. To further accommodate time-varying motion states, we introduce a Dynamic Simulated Annealing (DSA) strategy that adaptively schedules training processes, effectively eliminating oscillations and trajectory fractures caused by conventional fixed training paradigms. Experiments on both synthetic and real-world datasets demonstrate that our method achieves efficient target reconstruction while recovering complete projectile motion trajectories. 
 
+## Methods
+![Methods](https://github.com/user-attachments/assets/2099ac39-543b-499e-9a4f-19295ead4eec)
+
 ## Demo
 ### (1) Synthetic（Left-Render; Right-GT）：
 
@@ -19,9 +22,6 @@ Projectile motion reconstruction is critical for robotics and computer vision ap
 <p align="left">
   <img src="https://github.com/user-attachments/assets/b288ca64-47eb-4b19-bad1-1967ee51251f" width="48%">
 </p>
-
-
-
 
 ### (2) Real：
 ![box_full_results-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3f199596-4f85-47db-b5da-7a57d7a98432)
