@@ -1,5 +1,8 @@
 # PMGS: Reconstruction of Projectile Motion with 3D Gaussian Splatting
 
+## Abstract
+Projectile motion reconstruction is critical for robotics and computer vision applications. However, jointly estimating 3D geometry and motion parameters from monocular observations remains challenging due to its ill-posed inverse nature, while existing dynamic neural rendering methods struggle to capture complex rigid-body physics across large spatial-temporal scales. To address these issues, we propose a unified framework that integrates static modeling with dynamic tracking for projectile motion reconstruction. Our approach comprises two key stages: 1) Dynamic scene decomposition for appearance and geometry modeling, where the complex motion is converted into equivalent static scenes via a Focus-Align module, reconstructed through optical flow-enhanced Gaussian splatting with an improved point density control mechanism; 2) Physically-constrained motion tracking for trajectory restoration, where we estimate per-frame SE(3) transformations based on explicit Gaussian representations, and enforce Newtonian acceleration priors to ensure physically consistent motion. To further accommodate time-varying motion states, we introduce a Dynamic Simulated Annealing (DSA) strategy that adaptively schedules training processes, effectively eliminating oscillations and trajectory fractures caused by conventional fixed training paradigms. Experiments on both synthetic and real-world datasets demonstrate that our method achieves efficient target reconstruction while recovering complete projectile motion trajectories. 
+
 ## Demo
 ### Synthetic（Left-Render; Right-GT）：
 
