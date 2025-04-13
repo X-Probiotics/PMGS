@@ -19,7 +19,7 @@
 
 <p align="left">
   <img src="https://github.com/user-attachments/assets/b288ca64-47eb-4b19-bad1-1967ee51251f" width="48%">
-  <img src="(https://github.com/user-attachments/assets/b4816a6d-c30c-48ee-844a-74c4a9cc1f25)" width="48%">
+  <img src="https://github.com/user-attachments/assets/b4816a6d-c30c-48ee-844a-74c4a9cc1f25" width="48%">
 </p>
 
 ### (2) Real：
