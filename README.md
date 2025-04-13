@@ -1,5 +1,5 @@
 # Reconstruction of Projectile Motion with 3D Gaussian Splatting  
-(Clarification: In order not to violate the double-blind policy, except for the title, we will not repeat any text that appears in the submitted paper on this anonymous website.)
+(Clarification: In order not to violate the double-blind policy, except for the title and necessary image captions, we will not repeat any text that appears in the submitted paper on this anonymous website.)
 
 ## Teaser
 ![teaser_00](https://github.com/user-attachments/assets/5cf97a74-c4d1-4666-87a7-cb839b0403e9)
