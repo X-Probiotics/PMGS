@@ -1,4 +1,4 @@
-![output_video-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/da898240-5079-4bf0-9c76-3c2bb0adc29d)Reconstruction of Projectile Motion with 3D Gaussian Splatting
+# Reconstruction of Projectile Motion with 3D Gaussian Splatting
 ![teaser](https://github.com/user-attachments/assets/38ead2a6-f638-4023-84cd-f636b71a0909)
 
 ## Methods
@@ -20,7 +20,6 @@
 <p align="left">
   <img src="https://github.com/user-attachments/assets/b288ca64-47eb-4b19-bad1-1967ee51251f" width="48%">
   <img src="(https://github.com/user-attachments/assets/b4816a6d-c30c-48ee-844a-74c4a9cc1f25)" width="48%">
-"" width="48%">
 </p>
 
 ### (2) Real：
