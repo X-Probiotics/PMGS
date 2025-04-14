@@ -103,6 +103,6 @@ To validate our method's superiority in 6DoF motion estimation (achieved through
 </p>
 
 Model 1: w/o Focus-Align module.   
-Model 2: w/o `$L_{Acc}$` and `$L_{Smooth}$`.  
+Model 2: w/o $L_{Acc}$ and $L_{Smooth}$.  
 Model 3: w/o DSA strategy.  
 
