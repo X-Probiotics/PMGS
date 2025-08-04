@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from torchvision.utils import save_image
 from PIL import Image
 import torchvision.transforms as T
-import cv2  # 引入 OpenCV 库
+import cv2 
 from scene.Register import Register
 
 try:
@@ -45,32 +45,19 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 def calculate_intrinsics(viewpoint_cam):
-    """
-    根据视场角和图像尺寸计算相机内参矩阵。
 
-    Args:
-        viewpoint_cam: 包含相机属性的对象
-
-    Returns:
-        K (torch.Tensor): 相机内参矩阵，形状为 (3, 3)
-    """
-    # 获取图像宽度和高度
     image_width = viewpoint_cam.image_width
     image_height = viewpoint_cam.image_height
 
-    # 获取水平和垂直视场角 (Field of View)
-    FoVx = viewpoint_cam.FoVx  # 水平视场角
-    FoVy = viewpoint_cam.FoVy  # 垂直视场角
+    FoVx = viewpoint_cam.FoVx  
+    FoVy = viewpoint_cam.FoVy  
 
-    # 计算焦距 fx 和 fy
     f_x = image_width / (2.0 * math.tan(FoVx / 2.0))
     f_y = image_height / (2.0 * math.tan(FoVy / 2.0))
 
-    # 计算光心 (cx, cy)
     c_x = image_width / 2.0
     c_y = image_height / 2.0
 
-    # 构建内参矩阵 K
     K = torch.tensor([[f_x, 0, c_x],
                       [0, f_y, c_y],
                       [0, 0, 1]], dtype=torch.float32).cuda()
@@ -95,12 +82,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     viewpoint_stack = None
     ema_loss_for_log = 0.0
-    flow_loss_weight = opt.lambda_flow if hasattr(opt, 'lambda_flow') else 0.1  # 设置光流损失的权重
-    flow_frame_interval = 1  # 每n帧计算一次光流损失
+    flow_loss_weight = opt.lambda_flow if hasattr(opt, 'lambda_flow') else 0.1  
+    flow_frame_interval = 1  
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
 
-    prev_render_pkg = None  # 初始化 prev_render_pkg 为空
+    prev_render_pkg = None  
 
     for iteration in range(first_iter, opt.iterations + 1):        
         if network_gui.conn == None:
@@ -133,8 +120,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         # Pick the next Camera in sequence
         if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()  # 复制相机列表
-        viewpoint_cam = viewpoint_stack.pop(0)  # 每次弹出第一个相机，按顺序处理
+            viewpoint_stack = scene.getTrainCameras().copy()  
+        viewpoint_cam = viewpoint_stack.pop(0)  
 
         # Render
         if (iteration - 1) == debug_from:
@@ -145,10 +132,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
-        # 计算相机内参矩阵 K
         K = calculate_intrinsics(viewpoint_cam)
 
-        # 获取图像的大小 (H, W)
         image_size = (viewpoint_cam.image_height, viewpoint_cam.image_width)
         # print(image_size)
         # Loss
@@ -158,7 +143,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         Lssim = ssim(image, gt_image)
         loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
 
-        # 保存渲染图像，debug
         if iteration > 29400 :
             save_path = os.path.join("./render_image/test02_baishi", f"render_{iteration:06d}.png")
             vutils.save_image(image, save_path)
@@ -168,64 +152,38 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         start_num = 100*image_num+1
         
         if 29000 >= iteration >= start_num and ((iteration-start_num) % image_num) % flow_frame_interval == 0:
-            # print(iteration)
-            # 第一轮先获取渲染包不计算
+
             if ((iteration-start_num) % image_num) == 0:
                 prev_render_pkg = render_pkg
-            # 获取前一帧和当前帧的渲染包
+
             if prev_render_pkg is not None and ((iteration-start_num) % image_num) != 0:
                 estimated_flow = estimate_flow_from_render(prev_render_pkg, render_pkg, K, image_size)
                 #print(estimated_flow.shape)
-                # 加载真实光流
-                # 读取 target_flow
+
                 flow_filename = f"flow_{((iteration-start_num) % image_num) % flow_frame_interval:04d}.npy"
                 tem_path = os.path.join(os.path.dirname(dataset.model_path), "flow/1")
                 # flow_path = os.path.join("./data/Datasets/导弹/flow/1", flow_filename)
                 flow_path = os.path.join(tem_path, flow_filename)
                 target_flow = torch.from_numpy(np.load(flow_path)).cuda()
 
-                # 打印 estimated_flow 和 target_flow 的形状
-                # print(f"estimated_flow shape: {estimated_flow.shape}")
-                # print(f"target_flow shape: {target_flow.shape}")
-
-                # 使用裁剪和填充的方法将 target_flow 调整为与 estimated_flow 大小一致
                 target_flow_resized = resize_flow_to_match(target_flow, estimated_flow.shape)
 
-                # 打印调整后的 target_flow 形状
-                # print(f"Resized target_flow shape: {target_flow_resized.shape}")
-
-                # 当前帧图像
                 img1 = viewpoint_cam.original_image.cuda()
 
-                # 获取下一帧图像，若失败则跳过当前迭代
                 if hasattr(viewpoint_cam, 'next_image'):
                     img2 = viewpoint_cam.next_image.cuda()
                 else:
                     next_viewpoint_cam = get_next_frame(viewpoint_stack)
                     if next_viewpoint_cam is None:
-                        continue  # 跳过当前迭代
+                        continue  
                     img2 = next_viewpoint_cam.original_image.cuda()
-                    viewpoint_stack.append(next_viewpoint_cam)  # 将获取的相机放回栈底
+                    viewpoint_stack.append(next_viewpoint_cam)  
 
-                # 计算光流损失
                 flow_loss = optical_flow_loss(estimated_flow, target_flow_resized, img1.unsqueeze(0), img2.unsqueeze(0),lambda_smooth=opt.lambda_flow_smooth)
                 loss += flow_loss
-                # print(f"Iteration {iteration}: Loss = {loss.item()}")
-            # 保存当前帧 下一次计算使用
             prev_render_pkg = render_pkg
-
-        # scaling = gaussians.get_scaling  # 获取所有椭球的轴长度
-        # axis_loss1 = axis_uniformity_loss(scaling)
-        # axis_loss2 = axis_proportion_loss(scaling)
-        # loss += 0.001*axis_loss1 + 0.001* axis_loss2
         loss.backward()
-
-        # # 添加梯度裁剪以防止梯度爆炸
-        # torch.nn.utils.clip_grad_norm_(gaussians.parameters(), max_norm=1.0)
-
         iter_end.record()
-
-        # scene.save(iteration)
 
         with torch.no_grad():
             # Progress bar
@@ -267,42 +225,27 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
 
 def resize_flow_to_match(flow, target_shape):
-    # """
-    # 调整光流的大小以匹配目标大小。
-    # 如果需要，将裁剪或填充光流以使其与目标形状一致。
-
-    # Args:
-    #     flow (torch.Tensor): 需要调整的光流，形状为 [H, W, C]
-    #     target_shape (tuple): 目标形状，格式为 (target_H, target_W, C)
-
-    # Returns:
-    #     torch.Tensor: 调整后的光流
-    # """
     target_H, target_W, _ = target_shape
     H, W, C = flow.shape
 
-    # 如果高度或宽度过大，进行裁剪
     if H > target_H:
         flow = flow[:target_H, :, :]
     if W > target_W:
         flow = flow[:, :target_W, :]
 
-    # 如果高度或宽度过小，进行填充
     if H < target_H:
         padding_H = target_H - H
         flow = torch.nn.functional.pad(flow, (0, 0, 0, 0, 0, padding_H), mode='constant', value=0)
     if W < target_W:
         padding_W = target_W - W
         flow = torch.nn.functional.pad(flow, (0, 0, 0, padding_W), mode='constant', value=0)
-
     return flow
 def get_next_frame(viewpoint_stack):
     if viewpoint_stack:
         return viewpoint_stack.pop(randint(0, len(viewpoint_stack) - 1))
     else:
         # print("No more frames in the viewpoint stack, skipping this iteration.")
-        return None  # 返回 None 以表示未成功获取
-# 可视化光流并保存
+        return None  
 def save_image_tensor(img_tensor, save_path):
     vutils.save_image(img_tensor, save_path)
     print(f"Image saved at: {save_path}")
@@ -323,120 +266,79 @@ def visualize_flow(flow, save_path):
     print(f"Estimated flow saved at: {save_path}")
 
 def estimate_flow_from_render(prev_render_pkg, curr_render_pkg, K, image_size):
-    # 获取渲染图像并转换为 NumPy 格式
     prev_image = prev_render_pkg["render"].squeeze().detach().cpu().numpy()
     curr_image = curr_render_pkg["render"].squeeze().detach().cpu().numpy()
 
-    # # 保存前后帧渲染图像
-    # prev_image_save_path = os.path.join(".\\render_image\\test03", f"prev_render_{iteration:06d}.png")
-    # curr_image_save_path = os.path.join(".\\render_image\\test03", f"curr_render_{iteration:06d}.png")
-    # save_image_tensor(torch.from_numpy(prev_image), prev_image_save_path)
-    # save_image_tensor(torch.from_numpy(curr_image), curr_image_save_path)
+    if len(prev_image.shape) == 3 and prev_image.shape[0] == 3:  
+        prev_image = prev_image.transpose(1, 2, 0)  
+    if len(curr_image.shape) == 3 and curr_image.shape[0] == 3:  
+        curr_image = curr_image.transpose(1, 2, 0)  
 
-    # 调整图像格式为 [H, W, C]
-    if len(prev_image.shape) == 3 and prev_image.shape[0] == 3:  # 如果是 [C, H, W]
-        prev_image = prev_image.transpose(1, 2, 0)  # 转换为 [H, W, C]
-    if len(curr_image.shape) == 3 and curr_image.shape[0] == 3:  # 如果是 [C, H, W]
-        curr_image = curr_image.transpose(1, 2, 0)  # 转换为 [H, W, C]
-
-    # 将图像转换为灰度图像
     prev_gray = cv2.cvtColor((prev_image * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
     curr_gray = cv2.cvtColor((curr_image * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
 
-    # 使用 Lucas-Kanade 光流法计算光流
     feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
     lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-    # 选择特征点
     prev_points = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)
 
-    # 计算光流
     curr_points, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_points, None, **lk_params)
 
-    # 计算光流矢量（仅保留状态为1的点）
     good_new = curr_points[status == 1]
     good_old = prev_points[status == 1]
 
-    # 初始化光流为二维张量 [H, W, 2]，表示 x 和 y 的位移
     flow = np.zeros((prev_image.shape[0], prev_image.shape[1], 2), dtype=np.float32)
     for i, (new, old) in enumerate(zip(good_new, good_old)):
         a, b = new.ravel()
         c, d = old.ravel()
 
-        # 限制 a 和 b 坐标在图像范围内，防止越界错误
         a = max(0, min(flow.shape[1] - 1, a))
         b = max(0, min(flow.shape[0] - 1, b))
 
-        flow[int(b), int(a), 0] = a - c  # x 方向位移
-        flow[int(b), int(a), 1] = b - d  # y 方向位移
+        flow[int(b), int(a), 0] = a - c  
+        flow[int(b), int(a), 1] = b - d  
 
-    # 将 flow 转换为 torch.Tensor 并调整大小以匹配目标图像大小
     flow_tensor = torch.from_numpy(flow).permute(2, 0, 1).unsqueeze(0).float().cuda()
     flow_resized = F.interpolate(flow_tensor, size=image_size, mode='bilinear', align_corners=False).squeeze(0).permute(1, 2, 0)
-
-    # 可视化并保存光流
-    # flow_save_path = os.path.join("E:\\RAFT\\RAFT\\estimated_flow", f"estimated_flow_{iteration:06d}.png")
-    # visualize_flow(flow_resized, flow_save_path)
-
     return flow_resized
 
 def estimate_flow_from_render_CF(prev_images, curr_render_pkg, K, image_size):
-    # 获取渲染图像并转换为 NumPy 格式
-    # prev_image = prev_render_pkg["render"].squeeze().detach().cpu().numpy()
+
     prev_image = prev_images.squeeze().detach().cpu().numpy()
     curr_image = curr_render_pkg["render"].squeeze().detach().cpu().numpy()
 
-    # # 保存前后帧渲染图像
-    # prev_image_save_path = os.path.join(".\\render_image\\test03", f"prev_render_{iteration:06d}.png")
-    # curr_image_save_path = os.path.join(".\\render_image\\test03", f"curr_render_{iteration:06d}.png")
-    # save_image_tensor(torch.from_numpy(prev_image), prev_image_save_path)
-    # save_image_tensor(torch.from_numpy(curr_image), curr_image_save_path)
 
-    # 调整图像格式为 [H, W, C]
-    if len(prev_image.shape) == 3 and prev_image.shape[0] == 3:  # 如果是 [C, H, W]
-        prev_image = prev_image.transpose(1, 2, 0)  # 转换为 [H, W, C]
-    if len(curr_image.shape) == 3 and curr_image.shape[0] == 3:  # 如果是 [C, H, W]
-        curr_image = curr_image.transpose(1, 2, 0)  # 转换为 [H, W, C]
+    if len(prev_image.shape) == 3 and prev_image.shape[0] == 3:  
+        prev_image = prev_image.transpose(1, 2, 0)  
+    if len(curr_image.shape) == 3 and curr_image.shape[0] == 3: 
+        curr_image = curr_image.transpose(1, 2, 0)  
 
-    # 将图像转换为灰度图像
     prev_gray = cv2.cvtColor((prev_image * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
     curr_gray = cv2.cvtColor((curr_image * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
 
-    # 使用 Lucas-Kanade 光流法计算光流
     feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
     lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-    # 选择特征点
     prev_points = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)
 
-    # 计算光流
     curr_points, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_points, None, **lk_params)
 
-    # 计算光流矢量（仅保留状态为1的点）
     good_new = curr_points[status == 1]
     good_old = prev_points[status == 1]
 
-    # 初始化光流为二维张量 [H, W, 2]，表示 x 和 y 的位移
     flow = np.zeros((prev_image.shape[0], prev_image.shape[1], 2), dtype=np.float32)
     for i, (new, old) in enumerate(zip(good_new, good_old)):
         a, b = new.ravel()
         c, d = old.ravel()
 
-        # 限制 a 和 b 坐标在图像范围内，防止越界错误
         a = max(0, min(flow.shape[1] - 1, a))
         b = max(0, min(flow.shape[0] - 1, b))
 
-        flow[int(b), int(a), 0] = a - c  # x 方向位移
-        flow[int(b), int(a), 1] = b - d  # y 方向位移
+        flow[int(b), int(a), 0] = a - c  
+        flow[int(b), int(a), 1] = b - d  
 
-    # 将 flow 转换为 torch.Tensor 并调整大小以匹配目标图像大小
     flow_tensor = torch.from_numpy(flow).permute(2, 0, 1).unsqueeze(0).float().cuda()
     flow_resized = F.interpolate(flow_tensor, size=image_size, mode='bilinear', align_corners=False).squeeze(0).permute(1, 2, 0)
-
-    # 可视化并保存光流
-    # flow_save_path = os.path.join("E:\\RAFT\\RAFT\\estimated_flow", f"estimated_flow_{iteration:06d}.png")
-    # visualize_flow(flow_resized, flow_save_path)
-
     return flow_resized
 
 def project_to_image_plane(points_3d, K):
@@ -540,13 +442,9 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
     if cnt == 1:
         point_cloud_path = os.path.join(dataset.model_path, "point_cloud/iteration_30000/point_cloud.ply")
         gaussians.load_ply(point_cloud_path)
-        # scene.gaussians.load_ply('/home/c206/zjr/3dgs/data/lvdaodan/output/point_cloud/iteration_30000/point_cloud.ply')
     else :
         point_cloud_path = os.path.join(dataset.model_path, "regist/Regist/regist_gaussians_{}/point_cloud.ply".format(cnt-1))
         gaussians.load_ply(point_cloud_path)
-        # file_path_template = '/home/c206/zjr/3dgs/data/lvdaodan/regist/Regist/regist_gaussians_{}/point_cloud.ply'
-        # file_path = file_path_template.format(cnt-1)
-        # scene.gaussians.load_ply(file_path)
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -565,11 +463,11 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
         # INIT_T = [0-0.8, 0+1.5, 0+1.8]
         # INIT_S = [1]
         # #baishi zhun
-        # INIT_R = [0, 0-0, 0+40]
+        # INIT_R = [0, 0, 0+40]
         # INIT_T = [0, 0, 0]
         # INIT_S = [1]
         # #nezha zhun
-        # INIT_R = [0, 0-0, 0+0]
+        # INIT_R = [0, 0, 0]
         # INIT_T = [0+0.5, 0-0.5, 0+0.9]
         # INIT_S = [1]
         # boluo zhun
@@ -692,10 +590,10 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
 
         # Pick the next Camera in sequence
         if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()  # 复制相机列表
+            viewpoint_stack = scene.getTrainCameras().copy()  
         if i == 100:
             viewpoint_stack.pop(0)
-            viewpoint_cam = viewpoint_stack.pop(0)  # 每次弹出第一个相机，按顺序处理
+            viewpoint_cam = viewpoint_stack.pop(0) 
         else:
             viewpoint_cam = viewpoint_stack.pop(0)
 
@@ -732,7 +630,6 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
         xyz_i = gaussians.get_xyz.detach().clone()
         scaling_orgin = gaussians._scaling
 
-        # 配准前的质心
         xyz_0 =  gaussians.get_xyz.detach().clone()
         C0 = torch.mean(xyz_0, dim=0, keepdim = True)
         print(C0)
@@ -774,20 +671,20 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
             #     else : 
             #         if prev_render_pkg is not None and prve_gt_image is not None:
             #             K = calculate_intrinsics(viewpoint_cam)
-            #             # 获取图像的大小 (H, W)
+            #             
             #             image_size = (viewpoint_cam.image_height, viewpoint_cam.image_width)
             #             estimated_flow = estimate_flow_from_render_CF(prve_gt_image, render_pkg, K, image_size)
-            #             # 加载真实光流
+            #             
             #             flow_filename = f"flow_{(i-1) :04d}.npy"
             #             tem_path = os.path.join(os.path.dirname(dataset.model_path), "flow_orign/1")
             #             flow_path = os.path.join(tem_path, flow_filename)
             #             target_flow = torch.from_numpy(np.load(flow_path)).cuda()
             #             target_flow_resized = resize_flow_to_match(target_flow, estimated_flow.shape)
-            #             # 当前帧图像
+            #             
             #             img1 = render_pkg["render"]
-            #             # 获取qian一帧图像
+            #             
             #             img2 = prve_gt_image
-            #             # 计算光流损失
+            #             
             #             flow_loss = optical_flow_loss(estimated_flow, target_flow_resized, img1.unsqueeze(0), img2.unsqueeze(0),lambda_smooth=opt.lambda_flow_smooth)
             #             loss += flow_loss*0.1 + loss*0.9
 
@@ -804,18 +701,18 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
             
             if i >= 4 and iteration >= 10 :
                 Abefore = gaussians.acc[-1].requires_grad_(True)
-                Abefore_gravity = torch.dot(Abefore.squeeze(), gravity).requires_grad_(True) # (A·g) * g 计算加速度在重力方向上的分量，先点积得到常数，再乘到重力向量上。
+                Abefore_gravity = torch.dot(Abefore.squeeze(), gravity).requires_grad_(True) 
                 Abefore_g = (Abefore_gravity * gravity).requires_grad_(True)
 
-                xyz_t =  gaussians.get_xyz.detach().clone()  # 当前迭代下的质心
+                xyz_t =  gaussians.get_xyz.detach().clone() 
                 Cnow = torch.mean(xyz_t, dim=0, keepdim = True).requires_grad_(True)
                 Cbefore = gaussians.cen[-1]
-                St = (Cnow - Cbefore).requires_grad_(True) # 当前迭代下的位移
+                St = (Cnow - Cbefore).requires_grad_(True) 
                 
-                Anow = ((St - gaussians.dis[-1]) * (gaussians.dis[-1] - gaussians.dis[-2])).requires_grad_(True) # 当前迭代下的加速度
-                Anow_gravity = torch.dot(Anow.squeeze(), gravity).requires_grad_(True) #点积
-                Anow_g = (Anow_gravity * gravity).requires_grad_(True) #投影
-                Anow_others = (Anow - Anow_g).requires_grad_(True)  # 加速度向量减去重力分量，得到垂直重力分量
+                Anow = ((St - gaussians.dis[-1]) * (gaussians.dis[-1] - gaussians.dis[-2])).requires_grad_(True) 
+                Anow_gravity = torch.dot(Anow.squeeze(), gravity).requires_grad_(True) 
+                Anow_g = (Anow_gravity * gravity).requires_grad_(True) 
+                Anow_others = (Anow - Anow_g).requires_grad_(True)  
 
                 gpart = torch.norm(Anow_g - Abefore_g).requires_grad_(True)
                 otherpart = torch.norm(Anow_others).requires_grad_(True)
@@ -843,13 +740,13 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
                     os.makedirs(img_save_path, exist_ok=True)
                     imageio.imwrite(os.path.join(img_save_path, f"{iteration}.png"), img_list)
         
-        xyz_1 =  gaussians.get_xyz.detach().clone() # 配准后的质心
+        xyz_1 =  gaussians.get_xyz.detach().clone() 
         C1 = torch.mean(xyz_1, dim=0, keepdim = True)
 
-        S = C1 - gaussians.cen[-1] # 计算质心位移S
+        S = C1 - gaussians.cen[-1] 
         gaussians.update_dis(S)
-    
-        # 计算加速度（第三帧可以获得第一个加速度值，第四帧可以开始用加速度损失值优化）
+
+
         if i >= 3 :
             a = (gaussians.dis[-1] - gaussians.dis[-2]) - (gaussians.dis[-2] - gaussians.dis[-3])
             print(a)
@@ -868,10 +765,8 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
     
 def get_image_num(path):
     jpg_count = 0
-# 遍历文件夹中的所有文件
     for root, dirs, files in os.walk(path):
         for file in files:
-            # 检查文件扩展名是否为 .jpg 或 .JPG
             if file.lower().endswith('.jpg'):
                 jpg_count += 1
     return jpg_count
@@ -880,7 +775,6 @@ def test(dataset,opt,pipe,debug_from,save_root,iterations,const_scale):
     viewpoint_stack = None
     ema_loss_for_log = 0.0
     gaussians = GaussianModel(0,const_scale)
-    # set_gaussians(gaussians,PLY_ROOT)
 
     file_path_template = '/home/c206/zjr/3dgs/data/regist/regist_gaussians_{}/point_cloud.ply'
     file_path = file_path_template.format(5)
@@ -919,21 +813,17 @@ def test(dataset,opt,pipe,debug_from,save_root,iterations,const_scale):
     imageio.imwrite(os.path.join(img_save_path, f"{1}.png"), img_list)
 def save_constscale(savepath,constscale):
     with open(savepath, 'w') as file:
-        # 将 float 变量转换为字符串并写入文件
         file.write(str(constscale))
 def load_constscale(path):
     try:
-        # 以只读模式打开文件
         with open(path, 'r') as file:
-            # 读取文件中的内容
             content = file.read()
-            # 将读取的内容转换为 float 类型
             number = float(content)
             return number
     except FileNotFoundError:
-        print(f"文件 {path} 未找到。")
+        print(f" {path} not found")
     except ValueError:
-        print(f"文件 {path} 中的内容无法转换为浮点数。")
+        print(f" {path} can't convert")
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
@@ -981,8 +871,6 @@ if __name__ == "__main__":
     # print(const_scale_init)
     # save_constscale(save_root,const_scale_init)
 
-
-# 以写入模式打开文件
 
     # test(lp.extract(args),op.extract(args),pp.extract(args),
     #                      args.debug_from,
