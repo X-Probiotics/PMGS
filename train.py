@@ -97,8 +97,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         # Pick the next Camera in sequence
         if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()  # 复制相机列表
-        viewpoint_cam = viewpoint_stack.pop(0)  # 每次弹出第一个相机，按顺序处理
+            viewpoint_stack = scene.getTrainCameras().copy()  
+        viewpoint_cam = viewpoint_stack.pop(0)  
 
         # Render
         if (iteration - 1) == debug_from:
@@ -244,10 +244,10 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,const_scale,crit_vgg,crit_
 
         # Pick the next Camera in sequence
         if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()  # 复制相机列表
+            viewpoint_stack = scene.getTrainCameras().copy()  
         if i == 1:
             # viewpoint_stack.pop(0)
-            viewpoint_cam = viewpoint_stack.pop(0)  # 每次弹出第一个相机，按顺序处理
+            viewpoint_cam = viewpoint_stack.pop(0)  
         else:
             viewpoint_cam = viewpoint_stack.pop(0)
 
@@ -287,18 +287,13 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,const_scale,crit_vgg,crit_
             gt_path = os.path.join(tem_path, gt_filename )
             gt_image = cv2.imread(gt_path)
 
-            # 1. 将 gt_image 从 np.uint8 转换为 np.float32
+      
             gt_image = gt_image.astype(np.float32)
-            # 2. 将 gt_image 的取值范围从 [0, 255] 缩放到 [0, 1]
             gt_image = gt_image/ 255.0
-            # 3. 将 gt_image 转换为 PyTorch 张量
             gt_image = torch.from_numpy(gt_image)
-            # 4. 调整维度顺序 (H, W, C) -> (C, H, W)
             gt_image = gt_image.permute(2, 0, 1)
             gt_image = gt_image.to(image.device)
-            # 获取 image 的高度和宽度
             height, width = image.shape[1:]
-            # 对 gt_image 进行等比例缩放
             resized_gt_image = resize(gt_image.unsqueeze(0), size=(height, width)).squeeze(0)
 
             Ll1 = l1_loss(image, resized_gt_image)
@@ -343,10 +338,8 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,const_scale,crit_vgg,crit_
     
 def get_image_num(path):
     jpg_count = 0
-# 遍历文件夹中的所有文件
     for root, dirs, files in os.walk(path):
         for file in files:
-            # 检查文件扩展名是否为 .jpg 或 .JPG
             if file.lower().endswith('.jpg'):
                 jpg_count += 1
     return jpg_count
