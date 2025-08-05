@@ -1,12 +1,4 @@
-# PMGS: Reconstruction of Projectile Motion across Large Spatiotemporal Spans via 3D Gaussian Splatting
-
-## Intro
-![Intro2_01](https://github.com/user-attachments/assets/3f1fe9bc-4a80-4049-9079-c6c1d26da63d)
-Existing paradigms are mainly confined to short-term, small-scale deformation and offer limited consideration for physical consistency. PMGS explores complex rigid motion modeling across large spatiotemporal spans.
-
-## Method
-![Methods2_01](https://github.com/user-attachments/assets/b0d7feed-e9f0-4fc4-a463-0b22123898ee)
-Overview of PMGS. We first segment the target then decompose the motion through centralization to transform the dynamic scene into static. For modeling, we learn a set of Gaussian kernels and align them at the original scale with a set of learnable affine transformation. In the motion recovery, we estimate the target’s SE(3) transformation frame by frame, and comprehensively improve tracking accuracy by integrating physics-enhanced strategies.
+# PMGS
 
 ## Demo
 ### (1) Synthetic（Left-Render; Right-GT）：
