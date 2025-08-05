@@ -54,24 +54,4 @@ To validate our method's superiority in 6DoF motion estimation, we conduct compa
 
 ![Shark-ezgif com-video-to-gif-converter (1)](https://github.com/user-attachments/assets/7a6b4532-4271-4b4d-af2e-e44c5cd2de7e)
 
-##  Remaining experiments
-### (1) Comparison of modeling:
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/bbc8b321-6ea9-47ce-9269-349ee3ed881a" width="50%">
-</p>
-
-### (2) Complete comparison of motion recovery:
-![Comparison_00](https://github.com/user-attachments/assets/9f0591ed-b7a8-436f-9af4-51277de23776)
-
-### (3) Extensive demonstration:
-![broad2_01](https://github.com/user-attachments/assets/c86da0bd-2707-431e-b70f-a71c04d194fc)
-(a) Novel views synthesis.
-(b) Multi-objects interaction.
-(c) Future motion trajectory prediction based on the 3D centroid coordinates with MLP.
-(d) Instantaneous displacement percpetion.
-
-## Ablation
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/56ab0373-ad96-43aa-b1ec-0e22e6e9177e" width="50%">
-</p>
 
