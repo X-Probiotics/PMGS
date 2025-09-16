@@ -22,40 +22,17 @@ from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
 
 def nd_inverse_sigmoid(x):
-    """
-    计算输入 numpy 数组 x 的逆 sigmoid（logit）函数。
-
-    参数:
-    x (numpy.ndarray): 输入数组，元素范围应在 (0, 1) 内。
-
-    返回:
-    numpy.ndarray: 计算得到的 logit 结果。
-    """
-    # 为了数值稳定性，将 x 限制在一个小的范围
     eps = np.finfo(x.dtype).eps
     x = np.clip(x, eps, 1 - eps)
     return np.log(x / (1 - x))
 def process_tensor(input_array, cnt1, cnt2):
-    """
-    此函数用于处理输入的 numpy 数组，并对其中小于 0 和大于 1 的元素进行相应处理，同时更新计数变量
-
-    参数:
-    input_array (numpy.ndarray): 输入的 n*3 数组
-    cnt1 (int): 用于计数小于 0 的元素的变量
-    cnt2 (int): 用于计数大于 1 的元素的变量
-
-    返回:
-    numpy.ndarray: 处理后的数组
-    int: 更新后的 cnt1
-    int: 更新后的 cnt2
-    """
-    result_array = input_array.copy()  # 使用 copy 方法复制输入数组，避免修改原始数组
-    mask_less_than_zero = result_array < 0  # 找出小于 0 的元素
-    mask_greater_than_one = result_array >1   # 找出大于 1 的元素
-    cnt1 += np.sum(mask_less_than_zero)  # 计算小于 0 的元素数量并更新 cnt1
-    cnt2 += np.sum(mask_greater_than_one)  # 计算大于 1 的元素数量并更新 cnt2
-    result_array[mask_less_than_zero] = 0  # 将小于 0 的元素设为 0
-    result_array[mask_greater_than_one] = 1  # 将大于 1 的元素设为 1
+    result_array = input_array.copy()  
+    mask_less_than_zero = result_array < 0  
+    mask_greater_than_one = result_array >1   
+    cnt1 += np.sum(mask_less_than_zero) 
+    cnt2 += np.sum(mask_greater_than_one)  
+    result_array[mask_less_than_zero] = 0  
+    result_array[mask_greater_than_one] = 1  
     return result_array, cnt1, cnt2
 
 class GaussianModel:
@@ -64,7 +41,6 @@ class GaussianModel:
         def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
             L = build_scaling_rotation(scaling_modifier * scaling, rotation)
             actual_covariance = L @ L.transpose(1, 2)
-            # 构建协方差矩阵
             symm = strip_symmetric(actual_covariance)
             return symm
 
@@ -81,37 +57,28 @@ class GaussianModel:
         self.rotation_activation = torch.nn.functional.normalize
 
     def __init__(self, sh_degree: int , Const_scale: float = 0.0):
-        # 球谐函数阶数
         self.active_sh_degree = 0
         self.max_sh_degree = sh_degree
-        # 高斯椭球中心点初始位置
         self._xyz = torch.empty(0)
-        # 球谐函数直流分量
         self._features_dc = torch.empty(0)
-        # 球谐函数高阶分量
         self._features_rest = torch.empty(0)
-        # 缩放因子 旋转因子 不透明度
         self._scaling = torch.empty(0)
         self._rotation = torch.empty(0)
         self._opacity = torch.empty(0)
-        # 投影到2d平面后2d高斯最大半径
         self.max_radii2D = torch.empty(0)
-        # 梯度累积值
         self.xyz_gradient_accum = torch.empty(0)
-        # 分母数量？
         self.denom = torch.empty(0)
-        # 优化器
         self.optimizer = None
         self.percent_dense = 0
         self.spatial_lr_scale = 0
         self.setup_functions()
         self.const_scale = Const_scale
-        self.cen = []  # 存储质心
-        self.dis = []  # 存储位移
-        self.acc = []   # 存储加速度
-        self.lr_r= []   # 存储旋转初始学习率
-        self.lr_t = []   # 存储平移初始学习率
-        self.iter = []   # 存储迭代次数
+        self.cen = []  
+        self.dis = []  
+        self.acc = []   
+        self.lr_r= []   
+        self.lr_t = []  
+        self.iter = []   
 
     def capture(self):
         return (
@@ -205,7 +172,6 @@ class GaussianModel:
             self.active_sh_degree += 1
 
     def create_from_pcd(self, pcd: BasicPointCloud, spatial_lr_scale: float):
-        # pcd point cloud data，从点云文件中创建数据
         self.spatial_lr_scale = spatial_lr_scale
         fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
@@ -262,37 +228,7 @@ class GaussianModel:
             l.append('rot_{}'.format(i))
         return l
     
-    # def origin2spring_save_ply(self, path):
-    #     mkdir_p(os.path.dirname(path))
-    #     xyz = self._xyz.detach().cpu().numpy()
-    #     normals = np.zeros_like(xyz)
-    #     f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
-    #     # rgb = SH2RGB(f_dc)#test3
-    #     # rgb = SH2RGB(f_dc/255.0) * 255 # test4
-    #     rgb = f_dc #test5
-    #     # cnt1=0
-    #     # cnt2=0
-    #     # rgb ,cnt1,cnt2= process_tensor(f_dc,cnt1,cnt2) #test6
-    #     # print(cnt1,cnt2)
 
-    #     # sh = SH2RGB(f_dc)
-    #     # cnt1=0
-    #     # cnt2=0
-    #     # rgb ,cnt1,cnt2= process_tensor(sh,cnt1,cnt2)
-    #     # rgb = rgb*255#test 9
-
-    #     opacities = self._opacity.detach().cpu().numpy()
-    #     scale_shape = self.get_xyz.shape[0]
-    #     tem = torch.full((scale_shape, 1), self.Const_Scale)
-    #     scale = torch.log(tem)
-    #     rotation = self._rotation.detach().cpu().numpy()
-    #     dtype_full = [(attribute, 'f4') for attribute in self.spring_construct_list_of_attributes()]
-    #     elements = np.empty(xyz.shape[0], dtype=dtype_full)
-    #     attributes = np.concatenate((xyz, normals, rgb, opacities, scale, rotation), axis=1)
-    #     elements[:] = list(map(tuple, attributes))
-    #     el = PlyElement.describe(elements, 'vertex')
-    
-    #     PlyData([el]).write(path)
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
         for param_group in self.optimizer.param_groups:
@@ -317,31 +253,7 @@ class GaussianModel:
         for i in range(self._rotation.shape[1]):
             l.append('rot_{}'.format(i))
         return l
-    # def save_ply_new(self, path):
-    #     mkdir_p(os.path.dirname(path))
-
-    #     xyz = self._xyz.detach().cpu().numpy()
-    #     normals = np.zeros_like(xyz)
-    #     f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
-    #     f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
-    #     opacities = self._opacity.detach().cpu().numpy()
-    #     scale_shape = self.get_xyz.shape[0]
-    #     tem = torch.full((scale_shape, 1), self.Const_Scale)
-    #     # scale0 = torch.log(tem)
-    #     # scale1 = torch.log(tem)
-    #     # scale2 = torch.log(tem)
-    #     scale0 = tem
-    #     scale1 = tem
-    #     scale2 = tem
-    #     print(scale0)
-    #     rotation = self._rotation.detach().cpu().numpy()
-
-    #     dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
-    #     elements = np.empty(xyz.shape[0], dtype=dtype_full)
-    #     attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale0,scale1,scale2, rotation), axis=1)
-    #     elements[:] = list(map(tuple, attributes))
-    #     el = PlyElement.describe(elements, 'vertex')
-    #     PlyData([el]).write(path)
+    
     def save_ply(self, path):
         mkdir_p(os.path.dirname(path))
 
@@ -513,7 +425,6 @@ class GaussianModel:
 
     def densification_postfix(self, new_xyz, new_features_dc, new_features_rest, new_opacities, new_scaling,
                               new_rotation):
-        # 创建新的高斯点
         d = {"xyz": new_xyz,
              "f_dc": new_features_dc,
              "f_rest": new_features_rest,
@@ -536,7 +447,6 @@ class GaussianModel:
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
     def densify_and_split(self, grads, grad_threshold, scene_extent, N=2):
-        # 获取高斯总数
         n_init_points = self.get_xyz.shape[0]
         # Extract points that satisfy the gradient condition
         padded_grad = torch.zeros((n_init_points), device="cuda")
@@ -595,19 +505,11 @@ class GaussianModel:
             big_points_vs = self.max_radii2D > max_screen_size
             big_points_ws = self.get_scaling.max(dim=1).values > 0.1 * extent
             prune_mask = torch.logical_or(torch.logical_or(prune_mask, big_points_vs), big_points_ws)
-
-        # 计算高斯点之间的距离相关信息
         # xyz_i = self.get_xyz.detach().clone()
         # dist2 = torch.clamp_min(distCUDA2(xyz_i), 0.0000001)
-
-        # # 计算高斯点之间的平均距离
         # num_points = xyz_i.shape[0]
         # average_distance = torch.sqrt(dist2.mean())
-
-        # # 找出距离大于平均距离的点
         # new_prune_mask = dist2 > 12*average_distance ** 2
-
-        # # 合并新的删除掩码和原有的删除掩码
         # prune_mask = torch.logical_or(prune_mask, new_prune_mask)
         self.prune_points(prune_mask)
 
