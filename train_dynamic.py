@@ -135,41 +135,24 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         K = calculate_intrinsics(viewpoint_cam)
 
         image_size = (viewpoint_cam.image_height, viewpoint_cam.image_width)
-        # print(image_size)
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()  
         Ll1 = l1_loss(image, gt_image)
-        # new
         Lssim = ssim(image, gt_image)
         loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
-
-        if iteration > 29400 :
-            save_path = os.path.join("./render_image/test02_baishi", f"render_{iteration:06d}.png")
-            vutils.save_image(image, save_path)
-            # print(f"Rendered image saved at: {save_path}")
-        # new
         image_num = 120
         start_num = 100*image_num+1
-        
         if 29000 >= iteration >= start_num and ((iteration-start_num) % image_num) % flow_frame_interval == 0:
-
             if ((iteration-start_num) % image_num) == 0:
                 prev_render_pkg = render_pkg
-
             if prev_render_pkg is not None and ((iteration-start_num) % image_num) != 0:
                 estimated_flow = estimate_flow_from_render(prev_render_pkg, render_pkg, K, image_size)
-                #print(estimated_flow.shape)
-
                 flow_filename = f"flow_{((iteration-start_num) % image_num) % flow_frame_interval:04d}.npy"
                 tem_path = os.path.join(os.path.dirname(dataset.model_path), "flow/1")
-                # flow_path = os.path.join("./data/Datasets/导弹/flow/1", flow_filename)
                 flow_path = os.path.join(tem_path, flow_filename)
                 target_flow = torch.from_numpy(np.load(flow_path)).cuda()
-
                 target_flow_resized = resize_flow_to_match(target_flow, estimated_flow.shape)
-
                 img1 = viewpoint_cam.original_image.cuda()
-
                 if hasattr(viewpoint_cam, 'next_image'):
                     img2 = viewpoint_cam.next_image.cuda()
                 else:
@@ -178,7 +161,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         continue  
                     img2 = next_viewpoint_cam.original_image.cuda()
                     viewpoint_stack.append(next_viewpoint_cam)  
-
                 flow_loss = optical_flow_loss(estimated_flow, target_flow_resized, img1.unsqueeze(0), img2.unsqueeze(0),lambda_smooth=opt.lambda_flow_smooth)
                 loss += flow_loss
             prev_render_pkg = render_pkg
@@ -223,16 +205,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
 
-
 def resize_flow_to_match(flow, target_shape):
     target_H, target_W, _ = target_shape
     H, W, C = flow.shape
-
     if H > target_H:
         flow = flow[:target_H, :, :]
     if W > target_W:
         flow = flow[:, :target_W, :]
-
     if H < target_H:
         padding_H = target_H - H
         flow = torch.nn.functional.pad(flow, (0, 0, 0, 0, 0, padding_H), mode='constant', value=0)
@@ -307,7 +286,6 @@ def estimate_flow_from_render_CF(prev_images, curr_render_pkg, K, image_size):
     prev_image = prev_images.squeeze().detach().cpu().numpy()
     curr_image = curr_render_pkg["render"].squeeze().detach().cpu().numpy()
 
-
     if len(prev_image.shape) == 3 and prev_image.shape[0] == 3:  
         prev_image = prev_image.transpose(1, 2, 0)  
     if len(curr_image.shape) == 3 and curr_image.shape[0] == 3: 
@@ -362,13 +340,11 @@ def prepare_output_and_logger(args):
         else:
             unique_str = str(uuid.uuid4())
         args.model_path = os.path.join("./output/", unique_str[0:10])
-        
     # Set up output folder
     print("Output folder: {}".format(args.model_path))
     os.makedirs(args.model_path, exist_ok = True)
     with open(os.path.join(args.model_path, "cfg_args"), 'w') as cfg_log_f:
         cfg_log_f.write(str(Namespace(**vars(args))))
-
     # Create Tensorboard writer
     tb_writer = None
     if TENSORBOARD_FOUND:
@@ -429,14 +405,9 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
     if cnt == 1:
         point_cloud_path = os.path.join(dataset.model_path, "point_cloud/iteration_30000/point_cloud.ply")
         gaussians.load_ply(point_cloud_path)
-        # gaussians.load_ply('/home/c206/zjr/3dgs/data/lvdaodan/output/point_cloud/iteration_30000/point_cloud.ply')
     else :
         point_cloud_path = os.path.join(dataset.model_path, "regist/Regist/regist_gaussians_{}/point_cloud.ply".format(cnt-1))
         gaussians.load_ply(point_cloud_path)
-        # file_path_template = '/home/c206/zjr/3dgs/data/lvdaodan/regist/Regist/regist_gaussians_{}/point_cloud.ply'
-        # file_path = file_path_template.format(cnt-1)
-        # gaussians.load_ply(file_path)
-
     scene = Scene(dataset, gaussians,regist=True)
 
     if cnt == 1:
@@ -450,30 +421,9 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
     if cnt == 1:
-        # #nike
         INIT_R = [0-25, 0-0, 0+0]
         INIT_T = [0.5 * 0.2005, 0.5 * 0.2593, 0.5 * -0.9447]
         INIT_S = [1]
-        # 导弹 zhun
-        # INIT_R = [0-45, 0+180, 0-45]
-        # INIT_T = [0, 0, 0.83]
-        # INIT_S = [0.88]
-        # boom
-        # INIT_R = [0-30, 0+180, 0]
-        # INIT_T = [0-0.8, 0+1.5, 0+1.8]
-        # INIT_S = [1]
-        # #baishi zhun
-        # INIT_R = [0, 0, 0+40]
-        # INIT_T = [0, 0, 0]
-        # INIT_S = [1]
-        # #nezha zhun
-        # INIT_R = [0, 0, 0]
-        # INIT_T = [0+0.5, 0-0.5, 0+0.9]
-        # INIT_S = [1]
-        # boluo zhun
-        # INIT_R = [0+30, 0-10, 0]
-        # INIT_T = [0, 0-1.0, 0]
-        # INIT_S = [1.5]
         R_LR = 0.0008
         T_LR = 8e-5
         S_LR = 3e-5
@@ -489,12 +439,8 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
     regist.training_setup(R_LR,T_LR,S_LR)
 
     train_bar = etqdm(range(1, iterations + 1))
-
-
     xyz_i = gaussians.get_xyz.detach().clone()
-    # const_scale_orgin = gaussians.const_scale
     scaling_orgin = gaussians._scaling
-
 
     for iteration in train_bar:
         # Pick a random Camera
@@ -544,22 +490,16 @@ def my_register_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale):
                 img_list = np.hstack(img_list).astype(np.uint8)
                 img_write_dir = os.path.join(dataset.model_path, "regist/Regist/")
                 regist_name = f'viz_regist_{cnt}'
-                # img_write_dir ='/home/c206/zjr/3dgs/data/regist/Regist/'
                 img_save_path = os.path.join(img_write_dir, regist_name)
                 os.makedirs(img_save_path, exist_ok=True)
                 imageio.imwrite(os.path.join(img_save_path, f"{iteration}.png"), img_list)
     with torch.no_grad():
         print("")
         logger.warning("Saving Registed Gaussians")
-        
-
         regist_name = f'regist_gaussians_{cnt}'
         save_root = os.path.join(dataset.model_path, "regist/Regist/")
-        # save_root = '/home/c206/zjr/3dgs/data/lvdaodan/regist/Regist/'
         save_path = os.path.join(save_root, regist_name)
         os.makedirs(save_root, exist_ok=True)
-
-        # scene.save(iteration, save_path=save_path)
         gaussians.save_ply(os.path.join(save_path, "point_cloud.ply"))
     return gaussians.const_scale
 
@@ -603,7 +543,6 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
         INIT_S = [1]
         regist = Register(INIT_R,INIT_T,INIT_S).cuda()
 
-        ### base learning rate
         base_R_LR = 0.007*5
         base_T_LR = 5e-4*3
         base_iterations = 1200
@@ -651,7 +590,6 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
             image = render_pkg["render"]
 
             # Loss
-            # L1 loss
             gt_image = viewpoint_cam.original_image.cuda()
             Ll1 = l1_loss(image, gt_image)
             LAMBDA_DSSIM = 0.0
@@ -746,7 +684,6 @@ def my_CF_gaus(dataset,opt,pipe,debug_from,iterations,cnt,const_scale,crit_vgg):
         S = C1 - gaussians.cen[-1] 
         gaussians.update_dis(S)
 
-
         if i >= 3 :
             a = (gaussians.dis[-1] - gaussians.dis[-2]) - (gaussians.dis[-2] - gaussians.dis[-3])
             print(a)
@@ -770,47 +707,6 @@ def get_image_num(path):
             if file.lower().endswith('.jpg'):
                 jpg_count += 1
     return jpg_count
-    
-def test(dataset,opt,pipe,debug_from,save_root,iterations,const_scale):
-    viewpoint_stack = None
-    ema_loss_for_log = 0.0
-    gaussians = GaussianModel(0,const_scale)
-
-    file_path_template = '/home/c206/zjr/3dgs/data/regist/regist_gaussians_{}/point_cloud.ply'
-    file_path = file_path_template.format(5)
-    gaussians.load_ply(file_path)
-
-    scene = Scene(dataset, gaussians,regist=True)
-
-    file_path_template = '/home/c206/zjr/3dgs/data/regist/regist_gaussians_{}/point_cloud.ply'
-    file_path = file_path_template.format(5)
-    scene.gaussians.load_ply(file_path)
-
-    bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
-    background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
-
-
-        # Pick a random Camera
-    if not viewpoint_stack:
-        viewpoint_stack = scene.getTrainCameras().copy()
-    viewpoint_cam = viewpoint_stack[0]
-
-    pipe.debug = True
-    bg = torch.rand((3), device="cuda") if opt.random_background else background
-    render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
-    image = render_pkg["render"]
-
-
-    img_list = [
-        image.detach().cpu().permute(1, 2, 0).numpy() * 255,
-    ]
-    img_list = np.hstack(img_list).astype(np.uint8)
-    # img_write_dir = os.path.join(scene.exp_path, 'viz_regist')
-    regist_name = f'viz_regist_test'
-    img_write_dir ='/home/c206/zjr/3dgs/data/regist/'
-    img_save_path = os.path.join(img_write_dir, regist_name)
-    os.makedirs(img_save_path, exist_ok=True)
-    imageio.imwrite(os.path.join(img_save_path, f"{1}.png"), img_list)
 def save_constscale(savepath,constscale):
     with open(savepath, 'w') as file:
         file.write(str(constscale))
@@ -885,5 +781,5 @@ if __name__ == "__main__":
                     iterations=1500,cnt = i,
                     const_scale=const_scale_init,crit_vgg = crit_vgg,crit_tv = crit_tv)
     
-    # # All done
-    # print("\nTraining complete.")
+    # All done
+    print("\nTraining complete.")
