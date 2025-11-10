@@ -1,4 +1,5 @@
-# PMGS: econstruction of Projectile Motion across Large Spatiotemporal Spans via 3D Gaussian Splatting (AAAI 2026 Oral)
+# PMGS: econstruction of Projectile Motion across Large Spatiotemporal Spans via 3D Gaussian Splatting
+# AAAI2026 Oral  ^_^
 
 ## TODO
 (1) Baseline Code Update (√) 25.07
