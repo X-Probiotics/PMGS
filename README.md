@@ -3,11 +3,11 @@
 ## TODO
 (1) Baseline Code Update (√) 25.07
 
-(2) Datasets Update (√) 25.07
+(2) Primary Dataset Update (√) 25.07
 
-(3) Complete Code Update (after being published) 
+(3) Complete Code and Datasets Update 
 
-(4) Detailed Usage Instructions (after being published)
+(4) Detailed Usage Instructions 
 
 ## Demo
 ### (1) Synthetic（Left-Render; Right-GT）：
