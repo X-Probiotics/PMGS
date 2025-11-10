@@ -67,12 +67,5 @@ class Register(nn.Module):
 
         xyz = (R @ xyz.transpose(0, 1)).transpose(0, 1) + self.t.unsqueeze(0)
 
-        # print('[R,T.S]:',self.r,self.t,self.s)
-        # R_new = self.r
-        # T_new = self.s
-        # S_new = self.t
-        # if iteration % 1000 == 0:
-        #  print(R_new,T_new,S_new)
-
         return xyz
     
